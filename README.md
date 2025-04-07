@@ -31,3 +31,36 @@ JPA 애플리케이션의 성능을 모니터링하고 최적화 방안을 제�
 
 ### 7. ReportService
     - 메일을 통해 모니터링을 통해 수집한 정보 전송
+
+### 시퀀서 다이어그램
+
+```mermaid
+sequenceDiagram
+    participant App as 애플리케이션
+    participant Repo as JPA Repository
+    participant Aspect as RepositoryMethodAspect
+    participant Hibernate as Hibernate
+    participant EL as EntityLoadListener
+    participant DS as DataSourceProxy
+    participant MS as MonitoringService
+    
+    App->>Repo: 데이터 요청
+    Repo->>Aspect: 메소드 호출 인터셉트
+    Aspect->>Aspect: ThreadLocal에 메소드 정보 저장
+    Aspect->>Hibernate: 쿼리 실행
+    
+    Hibernate->>EL: 엔티티 로드 이벤트 발생
+    EL->>MS: 엔티티 로드 정보 저장
+    
+    Hibernate->>DS: SQL 쿼리 실행
+    DS->>DS: 쿼리 실행 시간 측정
+    DS->>Aspect: 현재 실행 중인 메소드 정보 조회
+    DS->>MS: 쿼리 및 메소드 정보 저장
+    
+    MS->>MS: N+1 문제 탐지
+    
+    Hibernate-->>App: 결과 반환
+    
+    App->>MS: 성능 보고서 요청
+    MS-->>App: 최적화 제안 및 통계 제공
+```
